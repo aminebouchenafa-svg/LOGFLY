@@ -52,6 +52,51 @@
   --jour-bg:#28231a; --nuit-bg:#211f33; --report-bg:#1b2733;
   --danger:#d8705d; --ok:#5cb890;
 }
+/* ---------- Mode nuit néon : cockpit de nuit, halos lumineux ---------- */
+:root[data-theme="neon"]{
+  --paper:#04060b; --surface:#0a111c; --ink:#d7f4ff; --muted:#7e9cb2;
+  --line:#15304a; --line-strong:#2a5f85; --accent:#2ee6ff; --accent-ink:#02141c;
+  --jour-bg:rgba(255,170,40,.09); --nuit-bg:rgba(160,80,255,.13); --report-bg:#0c1a2b;
+  --danger:#ff5c7a; --ok:#37ffc4;
+  --glow:rgba(46,230,255,.55); --glow-soft:rgba(46,230,255,.25);
+}
+:root[data-theme="neon"] body{
+  background:radial-gradient(1200px 620px at 50% -12%, #0a1626 0%, var(--paper) 62%) fixed;
+}
+:root[data-theme="neon"] header.app{
+  border-bottom-color:var(--accent);
+  box-shadow:0 0 22px var(--glow-soft);
+}
+:root[data-theme="neon"] header.app h1{color:#eafcff}
+:root[data-theme="neon"] header.app h1 .fly{text-shadow:0 0 6px var(--glow),0 0 20px var(--glow)}
+:root[data-theme="neon"] .chip-total{
+  background:#062a36;color:#8ff3ff;border:1px solid var(--accent);
+  box-shadow:0 0 10px var(--glow),0 0 28px var(--glow-soft);
+  text-shadow:0 0 6px var(--glow-soft);
+}
+:root[data-theme="neon"] nav.tabs button.on{
+  text-shadow:0 0 8px var(--glow);
+  box-shadow:0 8px 14px -10px var(--glow);
+}
+:root[data-theme="neon"] .btn.primary{
+  background:#062a36;color:#8ff3ff;border-color:var(--accent);
+  box-shadow:0 0 9px var(--glow),inset 0 0 10px rgba(46,230,255,.18);
+  text-shadow:0 0 5px var(--glow-soft);
+}
+:root[data-theme="neon"] .btn:hover{box-shadow:0 0 8px var(--glow)}
+:root[data-theme="neon"] .btn.danger{box-shadow:0 0 6px rgba(255,92,122,.35)}
+:root[data-theme="neon"] .card{box-shadow:0 0 16px rgba(46,230,255,.07)}
+:root[data-theme="neon"] .twrap{
+  border-color:var(--line-strong);
+  box-shadow:0 0 18px rgba(46,230,255,.13),0 0 2px var(--accent);
+}
+:root[data-theme="neon"] table.carnet thead th{color:#9fe8ff;text-shadow:0 0 6px rgba(46,230,255,.3)}
+:root[data-theme="neon"] table.carnet tr.totrep td{color:#aef4ff;text-shadow:0 0 6px rgba(46,230,255,.35)}
+:root[data-theme="neon"] .month-title{color:#aef4ff;text-shadow:0 0 8px var(--glow-soft)}
+:root[data-theme="neon"] .f input:focus-visible,
+:root[data-theme="neon"] .f select:focus-visible{box-shadow:0 0 9px var(--glow)}
+:root[data-theme="neon"] .msg.ok{text-shadow:0 0 8px rgba(55,255,196,.45)}
+:root[data-theme="neon"] h2{color:#aef4ff;text-shadow:0 0 8px var(--glow-soft)}
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
 body{
@@ -82,6 +127,15 @@ header.app .sub{color:var(--muted);font-size:13px;letter-spacing:.05em}
   white-space:nowrap;
 }
 .chip-total small{opacity:.8;font-family:var(--font-body);letter-spacing:.05em}
+.theme-btn{
+  appearance:none;border:1px solid var(--line);border-radius:4px;
+  background:var(--surface);color:var(--muted);cursor:pointer;
+  font-family:var(--font-head);font-size:13px;letter-spacing:.06em;
+  padding:5px 10px;white-space:nowrap;
+}
+.theme-btn:hover{border-color:var(--accent);color:var(--accent)}
+.theme-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+:root[data-theme="neon"] .theme-btn{border-color:var(--accent);color:#8ff3ff;box-shadow:0 0 8px var(--glow-soft)}
 nav.tabs{
   display:flex;gap:2px;padding:0 20px;background:var(--surface);
   border-bottom:1px solid var(--line);overflow-x:auto;
@@ -199,7 +253,9 @@ table.stats thead th{background:var(--report-bg);font-family:var(--font-head);te
 /* ---------- Impression ---------- */
 @page{size:A4 landscape;margin:9mm}
 @media print{
+  *{text-shadow:none !important;box-shadow:none !important}
   body{background:#fff;color:#000;font-size:11px}
+  table.carnet td,table.carnet th{background:#fff !important;color:#000}
   header.app,nav.tabs,.carnet-bar,.noprint,td.colact,th.colact{display:none !important}
   main{padding:0;max-width:none}
   section.view{display:none}
@@ -228,6 +284,7 @@ table.stats thead th{background:var(--report-bg);font-family:var(--font-head);te
   <h1>LOG<span class="fly">FLY</span></h1>
   <span class="sub">Carnet de vol — format réglementaire</span>
   <span class="chip-total" id="chipTotal"><small>TOTAL GÉNÉRAL</small> 0:00</span>
+  <button id="themeBtn" class="theme-btn" title="Changer de thème">🌗 Auto</button>
 </header>
 
 <nav class="tabs" id="tabs">
@@ -848,6 +905,24 @@ function refreshChrome(){
     `<small>TOTAL GÉNÉRAL</small> ${fmtHM(pilotTotal(g))}`;
   refreshDatalists();
 }
+/* ---------- thème (auto / clair / sombre / néon) ---------- */
+const THEME_SEQ = ["auto","light","dark","neon"];
+const THEME_LABEL = {auto:"🌗 Auto", light:"☀️ Clair", dark:"🌙 Sombre", neon:"⚡ Néon"};
+let curTheme = localStorage.getItem("logfly.theme") || "auto";
+if(!THEME_SEQ.includes(curTheme)) curTheme = "auto";
+const themeBtn = document.getElementById("themeBtn");
+function applyTheme(){
+  if(curTheme==="auto") document.documentElement.removeAttribute("data-theme");
+  else document.documentElement.setAttribute("data-theme", curTheme);
+  themeBtn.textContent = THEME_LABEL[curTheme];
+}
+themeBtn.addEventListener("click", ()=>{
+  curTheme = THEME_SEQ[(THEME_SEQ.indexOf(curTheme)+1) % THEME_SEQ.length];
+  localStorage.setItem("logfly.theme", curTheme);
+  applyTheme();
+});
+applyTheme();
+
 document.getElementById("f_date").value = new Date().toISOString().slice(0,10);
 fillReportForm();
 refreshChrome();
