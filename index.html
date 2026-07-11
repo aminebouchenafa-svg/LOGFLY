@@ -222,6 +222,24 @@ fieldset legend{
 }
 .frow{display:flex;flex-wrap:wrap;gap:12px 14px;align-items:flex-end;margin-top:10px}
 .frow .f{min-width:130px;flex:1}
+.leg{
+  display:flex;flex-wrap:wrap;gap:10px 12px;align-items:flex-end;
+  padding:8px 0 10px;border-bottom:1px dashed var(--line);
+}
+.leg:last-of-type{border-bottom:none}
+.leg .f{min-width:110px;flex:1}
+.leg-n{
+  font-family:var(--font-head);text-transform:uppercase;letter-spacing:.08em;
+  font-size:12px;color:var(--accent);min-width:72px;padding-bottom:9px;font-weight:700;
+}
+.leg-n .exc{color:var(--danger);font-size:10px;display:block;letter-spacing:.04em}
+.l-del{align-self:flex-end;margin-bottom:1px}
+.total-line{
+  font-family:var(--font-data);font-variant-numeric:tabular-nums;
+  font-size:14px;margin-top:10px;font-weight:600;
+}
+.total-line b{font-family:var(--font-head);letter-spacing:.06em;text-transform:uppercase;font-size:11px;color:var(--muted);margin-right:4px}
+.total-line span{margin-right:16px;white-space:nowrap}
 .btn{
   appearance:none;border:1px solid var(--line-strong);border-radius:4px;
   background:var(--surface);color:var(--ink);
@@ -370,13 +388,12 @@ table.stats thead th{background:var(--report-bg);font-family:var(--font-head);te
       </div>
 
       <fieldset id="blockFields">
-        <legend>Horaires (GMT)</legend>
-        <div class="frow">
-          <div class="f"><label for="f_out">Block off</label><input type="time" id="f_out"></div>
-          <div class="f"><label for="f_off">Take off</label><input type="time" id="f_off"></div>
-          <div class="f"><label for="f_ldg">Landing</label><input type="time" id="f_ldg"></div>
-          <div class="f"><label for="f_on">Block on</label><input type="time" id="f_on"></div>
+        <legend>Horaires des étapes (GMT)</legend>
+        <div id="legsZone"></div>
+        <div class="actions" style="margin-top:10px">
+          <button type="button" class="btn small" id="btnAddLeg">＋ Ajouter une étape</button>
         </div>
+        <p class="total-line" id="blockTotals" hidden></p>
         <p class="hint" id="blockInfo">Renseigne les horaires : les temps jour et nuit se calculent automatiquement.</p>
       </fieldset>
 
@@ -651,30 +668,81 @@ function splitDayNight(t0, t1){
   }
   return {nuit, jour:(t1-t0)-nuit};
 }
-const HOR_IDS = ["f_out","f_off","f_ldg","f_on"];
+/* ---------- étapes (max 4 par jour, la 5e exceptionnelle) ---------- */
+const MAX_LEGS = 5;
+let legs = [{out:"",off:"",ldg:"",on:""}];
+const LEG_KEYS = [["out","Block off"],["off","Take off"],["ldg","Landing"],["on","Block on"]];
+function renderLegs(){
+  const zone = document.getElementById("legsZone");
+  zone.innerHTML = legs.map((l,i)=>`
+    <div class="leg" data-i="${i}">
+      <span class="leg-n">Étape ${i+1}${i===4?'<span class="exc">exceptionnelle</span>':''}</span>
+      ${LEG_KEYS.map(([k,label])=>`
+      <div class="f"><label for="leg_${i}_${k}">${label}</label>
+        <input type="time" id="leg_${i}_${k}" data-k="${k}" value="${l[k]||""}">
+      </div>`).join("")}
+      ${legs.length>1?`<button type="button" class="btn small danger l-del" title="Supprimer l'étape">✕</button>`:""}
+    </div>`).join("");
+  zone.querySelectorAll("input[type=time]").forEach(inp=>{
+    inp.addEventListener("change", ()=>{
+      const i = +inp.closest(".leg").dataset.i;
+      legs[i][inp.dataset.k] = inp.value;
+      computeBlock();
+    });
+  });
+  zone.querySelectorAll(".l-del").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      legs.splice(+btn.closest(".leg").dataset.i, 1);
+      renderLegs(); computeBlock();
+    });
+  });
+  document.getElementById("btnAddLeg").disabled = legs.length>=MAX_LEGS;
+}
+document.getElementById("btnAddLeg").addEventListener("click", ()=>{
+  if(legs.length>=MAX_LEGS) return;
+  if(legs.length===4 && !confirm("Maximum 4 étapes par jour — la 5e est exceptionnelle. L'ajouter quand même ?")) return;
+  legs.push({out:"",off:"",ldg:"",on:""});
+  renderLegs(); computeBlock();
+});
+/* intervalle d'une étape : [t0,t1] en minutes, null si incomplète */
+function legInterval(l){
+  const t0 = parseClock(l.out) ?? parseClock(l.off);
+  const tE = parseClock(l.on) ?? parseClock(l.ldg);
+  if(t0==null || tE==null) return null;
+  let t1 = tE; if(t1<=t0) t1 += 1440; /* passage minuit */
+  return [t0,t1];
+}
 function computeBlock(){
   const info = document.getElementById("blockInfo");
-  const out = parseClock(document.getElementById("f_out").value);
-  const off = parseClock(document.getElementById("f_off").value);
-  const ldg = parseClock(document.getElementById("f_ldg").value);
-  const on  = parseClock(document.getElementById("f_on").value);
-  const t0 = out ?? off, tEnd = on ?? ldg;
-  if(t0==null || tEnd==null){
+  const totals = document.getElementById("blockTotals");
+  let bloc=0, vol=0, jour=0, nuit=0, n=0;
+  legs.forEach(l=>{
+    const iv = legInterval(l);
+    if(!iv) return;
+    n++;
+    bloc += iv[1]-iv[0];
+    const dn = splitDayNight(iv[0], iv[1]);
+    jour += dn.jour; nuit += dn.nuit;
+    const off = parseClock(l.off), ldg = parseClock(l.ldg);
+    if(off!=null && ldg!=null){ let e=ldg; if(e<=off) e+=1440; vol += e-off; }
+  });
+  if(!n){
+    totals.hidden = true;
     info.textContent = `Renseigne les horaires : les temps jour et nuit se calculent automatiquement (nuit ${nightCfg.start} → ${nightCfg.end} GMT).`;
     return;
   }
-  let t1 = tEnd; if(t1<=t0) t1 += 1440; /* passage minuit */
-  const {jour, nuit} = splitDayNight(t0, t1);
   document.getElementById("f_tj").value = toClock(jour);
   document.getElementById("f_tn").value = toClock(nuit);
-  let vol = "";
-  if(off!=null && ldg!=null){
-    let l = ldg; if(l<=off) l += 1440;
-    vol = ` · dont vol ${fmtHM(l-off)}`;
-  }
-  info.textContent = `Temps bloc ${fmtHM(t1-t0)}${vol} — jour ${fmtHM(jour)} · nuit ${fmtHM(nuit)} (nuit ${nightCfg.start} → ${nightCfg.end} GMT)`;
+  totals.hidden = false;
+  totals.innerHTML =
+    `<span><b>Temps de vol total</b> ${vol?fmtHM(vol):"—"}</span>`+
+    `<span><b>Temps bloc total</b> ${fmtHM(bloc)}</span>`+
+    `<span><b>Jour</b> ${fmtHM(jour)}</span>`+
+    `<span><b>Nuit</b> ${fmtHM(nuit)}</span>`+
+    `<span><b>Étapes</b> ${n}</span>`;
+  info.textContent = `Temps jour et nuit reportés automatiquement (nuit ${nightCfg.start} → ${nightCfg.end} GMT).`;
 }
-HOR_IDS.forEach(id=>document.getElementById(id).addEventListener("change", computeBlock));
+renderLegs();
 
 /* mode détaillé */
 const advToggle = document.getElementById("advToggle");
@@ -750,15 +818,12 @@ document.getElementById("flightForm").addEventListener("submit", e=>{
   const immat = fieldVal("immat").toUpperCase();
   const fonction = fieldVal("fonction").toUpperCase();
   if(!type || !immat || !fonction){ setMsg(formMsg,"Complétez le type, l'immatriculation et la fonction à bord.",false); return; }
-  const hor = {};
-  [["out","f_out"],["off","f_off"],["ldg","f_ldg"],["on","f_on"]].forEach(([k,id])=>{
-    const v = document.getElementById(id).value; if(v) hor[k]=v;
-  });
+  const recLegs = legs.filter(l=>l.out||l.off||l.ldg||l.on);
   const rec = {
     id: editId || (Date.now().toString(36)+Math.random().toString(36).slice(2,7)),
     date, type, immat, fonction,
     nature: fieldVal("nature").toUpperCase(),
-    hor, t, ifr, sig
+    legs: recLegs, t, ifr, sig
   };
   if(editId){
     const i = flights.findIndex(f=>f.id===editId);
@@ -780,8 +845,9 @@ function endEdit(clearMsg){
   document.getElementById("formTitle").textContent = "Nouveau vol";
   document.getElementById("btnSave").textContent = "Enregistrer le vol";
   document.getElementById("btnCancelEdit").hidden = true;
-  ["f_tj","f_tn","f_inst","f_link","f_ifr","f_sig","f_out","f_off","f_ldg","f_on"].forEach(id=>document.getElementById(id).value="");
-  computeBlock();
+  ["f_tj","f_tn","f_inst","f_link","f_ifr","f_sig"].forEach(id=>document.getElementById(id).value="");
+  legs = [{out:"",off:"",ldg:"",on:""}];
+  renderLegs(); computeBlock();
   if(advToggle.checked){ advToggle.checked = false; advToggle.dispatchEvent(new Event("change")); }
   TIMECOLS.forEach(c=>document.getElementById("adv_"+c).value="");
   document.getElementById("adv_ifr").value=""; document.getElementById("adv_sig").value="";
@@ -798,11 +864,9 @@ function startEdit(id){
   setFieldVal("immat", f.immat);
   setFieldVal("fonction", f.fonction);
   setFieldVal("nature", f.nature);
-  const hor = f.hor||{};
-  document.getElementById("f_out").value = hor.out||"";
-  document.getElementById("f_off").value = hor.off||"";
-  document.getElementById("f_ldg").value = hor.ldg||"";
-  document.getElementById("f_on").value = hor.on||"";
+  legs = (f.legs && f.legs.length ? f.legs : (f.hor && (f.hor.out||f.hor.off||f.hor.ldg||f.hor.on) ? [f.hor] : [{}]))
+         .map(l=>({out:l.out||"", off:l.off||"", ldg:l.ldg||"", on:l.on||""}));
+  renderLegs(); computeBlock();
   advToggle.checked = true; advToggle.dispatchEvent(new Event("change"));
   TIMECOLS.forEach(c=>document.getElementById("adv_"+c).value = fmtHM(f.t[c]||0, true));
   document.getElementById("adv_ifr").value = f.ifr||"";
@@ -1056,10 +1120,13 @@ document.getElementById("btnExport").addEventListener("click", ()=>{
     JSON.stringify({app:"LOGFLY",version:1,report0,flights}, null, 1), "application/json");
 });
 document.getElementById("btnCsv").addEventListener("click", ()=>{
-  const head = ["date","type","immat","fonction","nature","block_off","take_off","landing","block_on",...TIMECOLS,"ifr","signature"];
+  const head = ["date","type","immat","fonction","nature","etapes",...TIMECOLS,"ifr","signature"];
+  const legStr = f=>{
+    const ls = f.legs || (f.hor ? [f.hor] : []);
+    return ls.map(l=>`${l.out||"?"}/${l.off||"?"}-${l.ldg||"?"}/${l.on||"?"}`).join(" + ");
+  };
   const lines = [head.join(";")].concat(sortedFlights().map(f=>
-    [f.date,f.type,f.immat,f.fonction,f.nature,
-     (f.hor||{}).out||"",(f.hor||{}).off||"",(f.hor||{}).ldg||"",(f.hor||{}).on||"",
+    [f.date,f.type,f.immat,f.fonction,f.nature, legStr(f),
      ...TIMECOLS.map(c=>fmtHM(f.t[c]||0,true)), f.ifr||"", (f.sig||"").replace(/;/g,",")]
     .map(v=>String(v??"")).join(";")));
   download("logfly-carnet.csv", "﻿"+lines.join("\n"), "text/csv");
