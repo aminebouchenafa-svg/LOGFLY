@@ -59,6 +59,8 @@
   --jour-bg:rgba(255,170,40,.09); --nuit-bg:rgba(160,80,255,.13); --report-bg:#0c1a2b;
   --danger:#ff5c7a; --ok:#37ffc4;
   --glow:rgba(46,230,255,.55); --glow-soft:rgba(46,230,255,.25);
+  --neon-strong:#eafcff; --neon-text:#8ff3ff; --neon-head:#9fe8ff;
+  --neon-soft:#aef4ff; --neon-bg:#062a36;
 }
 :root[data-theme="neon"] body{
   background:radial-gradient(1200px 620px at 50% -12%, #0a1626 0%, var(--paper) 62%) fixed;
@@ -67,10 +69,10 @@
   border-bottom-color:var(--accent);
   box-shadow:0 0 22px var(--glow-soft);
 }
-:root[data-theme="neon"] header.app h1{color:#eafcff}
+:root[data-theme="neon"] header.app h1{color:var(--neon-strong)}
 :root[data-theme="neon"] header.app h1 .fly{text-shadow:0 0 6px var(--glow),0 0 20px var(--glow)}
 :root[data-theme="neon"] .chip-total{
-  background:#062a36;color:#8ff3ff;border:1px solid var(--accent);
+  background:var(--neon-bg);color:var(--neon-text);border:1px solid var(--accent);
   box-shadow:0 0 10px var(--glow),0 0 28px var(--glow-soft);
   text-shadow:0 0 6px var(--glow-soft);
 }
@@ -79,7 +81,7 @@
   box-shadow:0 8px 14px -10px var(--glow);
 }
 :root[data-theme="neon"] .btn.primary{
-  background:#062a36;color:#8ff3ff;border-color:var(--accent);
+  background:var(--neon-bg);color:var(--neon-text);border-color:var(--accent);
   box-shadow:0 0 9px var(--glow),inset 0 0 10px rgba(46,230,255,.18);
   text-shadow:0 0 5px var(--glow-soft);
 }
@@ -90,13 +92,46 @@
   border-color:var(--line-strong);
   box-shadow:0 0 18px rgba(46,230,255,.13),0 0 2px var(--accent);
 }
-:root[data-theme="neon"] table.carnet thead th{color:#9fe8ff;text-shadow:0 0 6px rgba(46,230,255,.3)}
-:root[data-theme="neon"] table.carnet tr.totrep td{color:#aef4ff;text-shadow:0 0 6px rgba(46,230,255,.35)}
-:root[data-theme="neon"] .month-title{color:#aef4ff;text-shadow:0 0 8px var(--glow-soft)}
+:root[data-theme="neon"] table.carnet thead th{color:var(--neon-head);text-shadow:0 0 6px var(--glow-soft)}
+:root[data-theme="neon"] table.carnet tr.totrep td{color:var(--neon-soft);text-shadow:0 0 6px var(--glow-soft)}
+:root[data-theme="neon"] .month-title{color:var(--neon-soft);text-shadow:0 0 8px var(--glow-soft)}
 :root[data-theme="neon"] .f input:focus-visible,
 :root[data-theme="neon"] .f select:focus-visible{box-shadow:0 0 9px var(--glow)}
 :root[data-theme="neon"] .msg.ok{text-shadow:0 0 8px rgba(55,255,196,.45)}
-:root[data-theme="neon"] h2{color:#aef4ff;text-shadow:0 0 8px var(--glow-soft)}
+:root[data-theme="neon"] h2{color:var(--neon-soft);text-shadow:0 0 8px var(--glow-soft)}
+/* ---------- Code couleur : fonction à bord ---------- */
+:root{--fc-cdb:#d99022;--fc-opl:#2b8ac0;--fc-dc:#8a5bd6;--fc-inst:#2e9d6b;--fc-other:#93a1ab}
+@media (prefers-color-scheme: dark){
+  :root{--fc-cdb:#ffb428;--fc-opl:#38c8ff;--fc-dc:#b48cff;--fc-inst:#37e0a0;--fc-other:#8fa3b0}
+}
+:root[data-theme="light"]{--fc-cdb:#d99022;--fc-opl:#2b8ac0;--fc-dc:#8a5bd6;--fc-inst:#2e9d6b;--fc-other:#93a1ab}
+:root[data-theme="dark"],:root[data-theme="neon"]{--fc-cdb:#ffb428;--fc-opl:#38c8ff;--fc-dc:#b48cff;--fc-inst:#37e0a0;--fc-other:#8fa3b0}
+table.carnet tr.fc-cdb td:first-child{box-shadow:inset 4px 0 0 var(--fc-cdb)}
+table.carnet tr.fc-opl td:first-child{box-shadow:inset 4px 0 0 var(--fc-opl)}
+table.carnet tr.fc-dc td:first-child{box-shadow:inset 4px 0 0 var(--fc-dc)}
+table.carnet tr.fc-inst td:first-child{box-shadow:inset 4px 0 0 var(--fc-inst)}
+table.carnet tr.fc-other td:first-child{box-shadow:inset 4px 0 0 var(--fc-other)}
+table.carnet tr.fc-cdb td.fcell{color:var(--fc-cdb);font-weight:700}
+table.carnet tr.fc-opl td.fcell{color:var(--fc-opl);font-weight:700}
+table.carnet tr.fc-dc td.fcell{color:var(--fc-dc);font-weight:700}
+table.carnet tr.fc-inst td.fcell{color:var(--fc-inst);font-weight:700}
+:root[data-theme="neon"] table.carnet td.fcell{text-shadow:0 0 7px currentColor}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;margin:0 0 12px;font-size:12.5px;color:var(--muted)}
+.legend .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px;background:var(--c)}
+:root[data-theme="neon"] .legend .dot{box-shadow:0 0 7px var(--c)}
+/* ---------- Sélecteur de couleur néon ---------- */
+.neon-picker{display:flex;gap:7px;align-items:center}
+.neon-picker[hidden]{display:none}
+.neon-picker .sw{
+  appearance:none;width:20px;height:20px;border-radius:50%;cursor:pointer;
+  background:var(--c);border:2px solid transparent;box-shadow:0 0 8px var(--c);padding:0;
+}
+.neon-picker .sw.on{border-color:#fff}
+.neon-picker .sw:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.neon-picker input[type=color]{
+  width:26px;height:24px;padding:0;border:1px solid var(--line);border-radius:4px;
+  background:var(--surface);cursor:pointer;
+}
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
 body{
@@ -285,6 +320,14 @@ table.stats thead th{background:var(--report-bg);font-family:var(--font-head);te
   <span class="sub">Carnet de vol — format réglementaire</span>
   <span class="chip-total" id="chipTotal"><small>TOTAL GÉNÉRAL</small> 0:00</span>
   <button id="themeBtn" class="theme-btn" title="Changer de thème">🌗 Auto</button>
+  <span id="neonPicker" class="neon-picker" hidden>
+    <button class="sw" data-c="#2ee6ff" style="--c:#2ee6ff" title="Cyan"></button>
+    <button class="sw" data-c="#3dff9e" style="--c:#3dff9e" title="Vert avionique"></button>
+    <button class="sw" data-c="#ff4df0" style="--c:#ff4df0" title="Magenta"></button>
+    <button class="sw" data-c="#ffb428" style="--c:#ffb428" title="Ambre"></button>
+    <button class="sw" data-c="#ff4d5e" style="--c:#ff4d5e" title="Rouge"></button>
+    <input type="color" id="neonCustom" value="#2ee6ff" title="Couleur libre">
+  </span>
 </header>
 
 <nav class="tabs" id="tabs">
@@ -359,6 +402,13 @@ table.stats thead th{background:var(--report-bg);font-family:var(--font-head);te
     <h2 style="margin:0">Carnet</h2>
     <select id="monthSel" aria-label="Mois affiché"></select>
     <button class="btn" id="btnPrint">Imprimer / PDF</button>
+  </div>
+  <div class="legend noprint">
+    <span><span class="dot" style="--c:var(--fc-cdb)"></span>CDB</span>
+    <span><span class="dot" style="--c:var(--fc-opl)"></span>OPL / 2e pilote</span>
+    <span><span class="dot" style="--c:var(--fc-dc)"></span>DC — double commande</span>
+    <span><span class="dot" style="--c:var(--fc-inst)"></span>INST — instructeur</span>
+    <span><span class="dot" style="--c:var(--fc-other)"></span>Autre</span>
   </div>
   <div id="carnetZone"></div>
 </section>
@@ -687,6 +737,14 @@ function headerHtml(){
   </tr>
   </thead>`;
 }
+function fcClass(fonction){
+  const f = String(fonction||"").toUpperCase();
+  if(f.includes("CDB") || f.includes("CMDT")) return "cdb";
+  if(f.includes("OPL") || f.includes("COPIL") || f.includes("2E")) return "opl";
+  if(f.includes("INST")) return "inst";
+  if(f.includes("DC") || f.includes("ELEVE") || f.includes("ÉLÈVE")) return "dc";
+  return "other";
+}
 const CELL_ORDER = ["me_j","me_n","mo_jd","mo_js","mo_nd","mo_ns",
                     "mu_jd","mu_j1","mu_j2","mu_nd","mu_n1","mu_n2","in_d","in_p","link"];
 const CELL_CLASS = {
@@ -744,11 +802,11 @@ function renderCarnet(){
             ${totalsCells(rep,false)}<td></td><td class="colact noprint"></td>
           </tr>
           ${rows.map(f=>`
-          <tr>
+          <tr class="fc-${fcClass(f.fonction)}">
             <td class="num">${+f.date.slice(8,10)}</td>
             <td class="txt">${escapeHtml(f.type)}</td>
             <td class="txt">${escapeHtml(f.immat)}</td>
-            <td>${escapeHtml(f.fonction)}</td>
+            <td class="fcell">${escapeHtml(f.fonction)}</td>
             <td class="txt">${escapeHtml(f.nature)}</td>
             ${CELL_ORDER.map(c=>`<td class="num ${CELL_CLASS[c]}">${fmtHM(f.t[c]||0,true)}</td>`).join("")}
             <td class="num">${f.ifr||""}</td>
@@ -911,10 +969,57 @@ const THEME_LABEL = {auto:"🌗 Auto", light:"☀️ Clair", dark:"🌙 Sombre",
 let curTheme = localStorage.getItem("logfly.theme") || "auto";
 if(!THEME_SEQ.includes(curTheme)) curTheme = "auto";
 const themeBtn = document.getElementById("themeBtn");
+const neonPicker = document.getElementById("neonPicker");
+const neonCustom = document.getElementById("neonCustom");
+
+/* couleur du néon (halo assorti), personnalisable */
+const NEON_PROPS = ["--accent","--glow","--glow-soft","--neon-strong","--neon-text",
+                    "--neon-head","--neon-soft","--neon-bg","--line","--line-strong","--report-bg"];
+function hexToRgb(h){
+  const m = /^#?([0-9a-f]{6})$/i.exec(h||"");
+  if(!m) return [46,230,255];
+  const n = parseInt(m[1],16);
+  return [n>>16, (n>>8)&255, n&255];
+}
+function applyNeonColor(){
+  const s = document.documentElement.style;
+  NEON_PROPS.forEach(p=>s.removeProperty(p));
+  neonPicker.hidden = curTheme!=="neon";
+  if(curTheme!=="neon") return;
+  const hex = localStorage.getItem("logfly.neoncolor") || "#2ee6ff";
+  const [r,g,b] = hexToRgb(hex);
+  const tint = k=>`rgb(${Math.round(r+(255-r)*k)},${Math.round(g+(255-g)*k)},${Math.round(b+(255-b)*k)})`;
+  const shade = k=>`rgb(${Math.round(r*k)},${Math.round(g*k)},${Math.round(b*k)})`;
+  const a = al=>`rgba(${r},${g},${b},${al})`;
+  s.setProperty("--accent", hex);
+  s.setProperty("--glow", a(.55));
+  s.setProperty("--glow-soft", a(.25));
+  s.setProperty("--neon-strong", tint(.85));
+  s.setProperty("--neon-text", tint(.55));
+  s.setProperty("--neon-head", tint(.45));
+  s.setProperty("--neon-soft", tint(.62));
+  s.setProperty("--neon-bg", shade(.16));
+  s.setProperty("--line", a(.22));
+  s.setProperty("--line-strong", a(.5));
+  s.setProperty("--report-bg", shade(.12));
+  neonCustom.value = hex;
+  neonPicker.querySelectorAll(".sw").forEach(b=>
+    b.classList.toggle("on", b.dataset.c.toLowerCase()===hex.toLowerCase()));
+}
+neonPicker.querySelectorAll(".sw").forEach(b=>b.addEventListener("click", ()=>{
+  localStorage.setItem("logfly.neoncolor", b.dataset.c);
+  applyNeonColor();
+}));
+neonCustom.addEventListener("input", ()=>{
+  localStorage.setItem("logfly.neoncolor", neonCustom.value);
+  applyNeonColor();
+});
+
 function applyTheme(){
   if(curTheme==="auto") document.documentElement.removeAttribute("data-theme");
   else document.documentElement.setAttribute("data-theme", curTheme);
   themeBtn.textContent = THEME_LABEL[curTheme];
+  applyNeonColor();
 }
 themeBtn.addEventListener("click", ()=>{
   curTheme = THEME_SEQ[(THEME_SEQ.indexOf(curTheme)+1) % THEME_SEQ.length];
