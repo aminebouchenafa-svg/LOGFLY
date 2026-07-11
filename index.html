@@ -77,8 +77,7 @@
   text-shadow:0 0 6px var(--glow-soft);
 }
 :root[data-theme="neon"] nav.tabs button.on{
-  text-shadow:0 0 8px var(--glow);
-  box-shadow:0 8px 14px -10px var(--glow);
+  box-shadow:0 8px 14px -10px var(--tab,var(--glow));
 }
 :root[data-theme="neon"] .btn.primary{
   background:var(--neon-bg);color:var(--neon-text);border-color:var(--accent);
@@ -180,9 +179,15 @@ nav.tabs button{
   font-family:var(--font-head);font-size:15px;letter-spacing:.08em;text-transform:uppercase;
   padding:10px 14px;cursor:pointer;border-bottom:3px solid transparent;
 }
-nav.tabs button:hover{color:var(--ink)}
-nav.tabs button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
-nav.tabs button.on{color:var(--accent);border-bottom-color:var(--accent);font-weight:700}
+nav.tabs button::before{
+  content:"";display:inline-block;width:8px;height:8px;border-radius:50%;
+  background:var(--tab,var(--muted));margin-right:7px;vertical-align:1px;
+}
+nav.tabs button:hover{color:var(--tab,var(--ink))}
+nav.tabs button:focus-visible{outline:2px solid var(--tab,var(--accent));outline-offset:-2px}
+nav.tabs button.on{color:var(--tab,var(--accent));border-bottom-color:var(--tab,var(--accent));font-weight:700}
+:root[data-theme="neon"] nav.tabs button.on{text-shadow:0 0 8px var(--tab,var(--glow))}
+:root[data-theme="neon"] nav.tabs button::before{box-shadow:0 0 7px var(--tab,var(--glow))}
 main{padding:18px 20px 60px;max-width:1500px;margin:0 auto}
 section.view{display:none}
 section.view.on{display:block}
@@ -331,10 +336,10 @@ table.stats thead th{background:var(--report-bg);font-family:var(--font-head);te
 </header>
 
 <nav class="tabs" id="tabs">
-  <button data-v="saisie" class="on">✚ Nouveau vol</button>
-  <button data-v="carnet">Carnet</button>
-  <button data-v="stats">Statistiques</button>
-  <button data-v="reglages">Réglages</button>
+  <button data-v="saisie" class="on" style="--tab:#2fae74">Nouveau vol</button>
+  <button data-v="carnet" style="--tab:#3f8fd9">Carnet</button>
+  <button data-v="stats" style="--tab:#d99a22">Statistiques</button>
+  <button data-v="reglages" style="--tab:#a06ee0">Réglages</button>
 </nav>
 
 <main>
@@ -346,11 +351,34 @@ table.stats thead th{background:var(--report-bg);font-family:var(--font-head);te
     <form id="flightForm" autocomplete="off">
       <div class="fgrid">
         <div class="f"><label for="f_date">Date</label><input type="date" id="f_date" required></div>
-        <div class="f"><label for="f_type">Type d'aéronef</label><input id="f_type" list="dl_type" placeholder="B737-800" required></div>
-        <div class="f"><label for="f_immat">Immatriculation</label><input id="f_immat" list="dl_immat" placeholder="7T-…" required></div>
-        <div class="f"><label for="f_fonction">Fonction à bord</label><input id="f_fonction" list="dl_fonction" placeholder="CDB" required></div>
-        <div class="f" style="grid-column:span 2"><label for="f_nature">Nature du vol</label><input id="f_nature" list="dl_nature" placeholder="ALG - ORY"></div>
+        <div class="f"><label for="f_type_sel">Type d'aéronef</label>
+          <select id="f_type_sel"></select>
+          <input id="f_type" placeholder="B737-800" hidden>
+        </div>
+        <div class="f"><label for="f_immat_sel">Immatriculation</label>
+          <select id="f_immat_sel"></select>
+          <input id="f_immat" placeholder="7T-…" hidden>
+        </div>
+        <div class="f"><label for="f_fonction_sel">Fonction à bord</label>
+          <select id="f_fonction_sel"></select>
+          <input id="f_fonction" placeholder="CDB" hidden>
+        </div>
+        <div class="f" style="grid-column:span 2"><label for="f_nature_sel">Nature du vol</label>
+          <select id="f_nature_sel"></select>
+          <input id="f_nature" placeholder="ALG - ORY" hidden>
+        </div>
       </div>
+
+      <fieldset id="blockFields">
+        <legend>Horaires (GMT)</legend>
+        <div class="frow">
+          <div class="f"><label for="f_out">Block off</label><input type="time" id="f_out"></div>
+          <div class="f"><label for="f_off">Take off</label><input type="time" id="f_off"></div>
+          <div class="f"><label for="f_ldg">Landing</label><input type="time" id="f_ldg"></div>
+          <div class="f"><label for="f_on">Block on</label><input type="time" id="f_on"></div>
+        </div>
+        <p class="hint" id="blockInfo">Renseigne les horaires : les temps jour et nuit se calculent automatiquement.</p>
+      </fieldset>
 
       <fieldset id="quickFields">
         <legend>Temps de vol</legend>
@@ -365,12 +393,12 @@ table.stats thead th{background:var(--report-bg);font-family:var(--font-head);te
           <div class="f"><label for="f_regime">Régime</label>
             <select id="f_regime"></select>
           </div>
-          <div class="f"><label for="f_tj">Temps jour (h:mm)</label><input class="hm" id="f_tj" placeholder="2:35"></div>
-          <div class="f"><label for="f_tn">Temps nuit (h:mm)</label><input class="hm" id="f_tn" placeholder="0:40"></div>
+          <div class="f"><label for="f_tj">Temps jour</label><input type="time" class="hm" id="f_tj"></div>
+          <div class="f"><label for="f_tn">Temps nuit</label><input type="time" class="hm" id="f_tn"></div>
         </div>
         <div class="frow">
-          <div class="f"><label for="f_inst">Vol aux instruments (h:mm)</label><input class="hm" id="f_inst" placeholder="1:10"></div>
-          <div class="f"><label for="f_link">Link / simulateur (h:mm)</label><input class="hm" id="f_link"></div>
+          <div class="f"><label for="f_inst">Vol aux instruments</label><input type="time" class="hm" id="f_inst"></div>
+          <div class="f"><label for="f_link">Link / simulateur</label><input type="time" class="hm" id="f_link"></div>
           <div class="f"><label for="f_ifr">Arrivées I.F.R.</label><input class="hm" id="f_ifr" type="number" min="0" step="1" placeholder="1"></div>
           <div class="f" style="flex:2"><label for="f_sig">Certification / remarques</label><input id="f_sig" placeholder="Aérodrome, instructeur…"></div>
         </div>
@@ -389,10 +417,6 @@ table.stats thead th{background:var(--report-bg);font-family:var(--font-head);te
       </div>
       <p class="msg" id="formMsg" role="status"></p>
     </form>
-    <datalist id="dl_type"></datalist>
-    <datalist id="dl_immat"></datalist>
-    <datalist id="dl_fonction"><option value="CDB"></option><option value="OPL"></option><option value="DC"></option><option value="INST"></option></datalist>
-    <datalist id="dl_nature"></datalist>
   </div>
 </section>
 
@@ -429,6 +453,16 @@ table.stats thead th{background:var(--report-bg);font-family:var(--font-head);te
       <div class="actions"><button type="submit" class="btn primary">Enregistrer le report</button></div>
       <p class="msg" id="reportMsg" role="status"></p>
     </form>
+  </div>
+  <div class="card">
+    <h2>Nuit aéronautique</h2>
+    <p class="hint" style="margin-top:-6px">Fenêtre horaire utilisée pour ventiler automatiquement les temps jour/nuit à partir des horaires block off / block on (en GMT).</p>
+    <div class="frow">
+      <div class="f" style="max-width:180px"><label for="nightStart">Début de nuit (GMT)</label><input type="time" id="nightStart"></div>
+      <div class="f" style="max-width:180px"><label for="nightEnd">Fin de nuit (GMT)</label><input type="time" id="nightEnd"></div>
+      <button type="button" class="btn primary" id="btnNight">Enregistrer</button>
+    </div>
+    <p class="msg" id="nightMsg" role="status"></p>
   </div>
   <div class="card">
     <h2>Sauvegarde des données</h2>
@@ -478,8 +512,10 @@ const MOIS = ["Janvier","Février","Mars","Avril","Mai","Juin",
 /* ---------- persistance ---------- */
 const LS_FLIGHTS = "logfly.flights.v1";
 const LS_REPORT  = "logfly.report0.v1";
+const LS_NIGHT   = "logfly.night.v1";
 let flights = load(LS_FLIGHTS, []);
 let report0 = load(LS_REPORT, null) || emptyTotals();
+let nightCfg = load(LS_NIGHT, null) || {start:"17:30", end:"05:30"};
 
 function load(k, d){ try{ const v = JSON.parse(localStorage.getItem(k)); return v==null? d : v; }catch(e){ return d; } }
 function save(){ localStorage.setItem(LS_FLIGHTS, JSON.stringify(flights)); }
@@ -547,6 +583,98 @@ function fillRegimes(){
 }
 selCat.addEventListener("change", fillRegimes);
 fillRegimes();
+
+/* ---------- sélecteurs à historique (moins de saisie) ---------- */
+const SELMAP = {
+  type:{sel:"f_type_sel", inp:"f_type", base:[]},
+  immat:{sel:"f_immat_sel", inp:"f_immat", base:[]},
+  fonction:{sel:"f_fonction_sel", inp:"f_fonction", base:["CDB","OPL","DC","INST"]},
+  nature:{sel:"f_nature_sel", inp:"f_nature", base:[]}
+};
+function historyVals(key){
+  const seen = new Set(), out = [];
+  sortedFlights().reverse().forEach(f=>{
+    const v = f[key];
+    if(v && !seen.has(v)){ seen.add(v); out.push(v); }
+  });
+  return out;
+}
+function refreshSelects(keepCurrent){
+  Object.entries(SELMAP).forEach(([key,m])=>{
+    const sel = document.getElementById(m.sel), inp = document.getElementById(m.inp);
+    const cur = keepCurrent ? sel.value : "";
+    const vals = historyVals(key);
+    m.base.forEach(b=>{ if(!vals.includes(b)) vals.push(b); });
+    sel.innerHTML = vals.map(v=>`<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join("")
+      + `<option value="__new__">✏️ Nouveau…</option>`;
+    if(cur && (vals.includes(cur) || cur==="__new__")) sel.value = cur;
+    else if(vals.length) sel.value = vals[0];
+    else sel.value = "__new__";
+    inp.hidden = sel.value!=="__new__";
+  });
+}
+Object.values(SELMAP).forEach(m=>{
+  document.getElementById(m.sel).addEventListener("change", ()=>{
+    const sel = document.getElementById(m.sel), inp = document.getElementById(m.inp);
+    inp.hidden = sel.value!=="__new__";
+    if(!inp.hidden){ inp.value=""; inp.focus(); }
+  });
+});
+function fieldVal(key){
+  const m = SELMAP[key], sel = document.getElementById(m.sel), inp = document.getElementById(m.inp);
+  return (sel.value==="__new__" ? inp.value : sel.value).trim();
+}
+function setFieldVal(key, val){
+  const m = SELMAP[key], sel = document.getElementById(m.sel), inp = document.getElementById(m.inp);
+  if(val && [...sel.options].some(o=>o.value===val)){ sel.value = val; inp.hidden = true; }
+  else { sel.value = "__new__"; inp.hidden = false; inp.value = val||""; }
+}
+
+/* ---------- horaires GMT et ventilation jour/nuit automatique ---------- */
+function parseClock(s){
+  const m = /^(\d{1,2}):(\d{2})$/.exec(String(s||"").trim());
+  if(!m) return null;
+  const h = +m[1], mn = +m[2];
+  if(h>23 || mn>59) return null;
+  return h*60+mn;
+}
+function toClock(min){ return String(Math.floor(min/60)).padStart(2,"0")+":"+String(min%60).padStart(2,"0"); }
+/* minutes de nuit dans l'intervalle absolu [t0,t1] (t0 dans [0,1440)) */
+function splitDayNight(t0, t1){
+  const s = parseClock(nightCfg.start) ?? 1050;
+  const e = parseClock(nightCfg.end) ?? 330;
+  let nuit = 0;
+  for(let k=-1; k<=Math.ceil(t1/1440); k++){
+    const ns = k*1440 + s;
+    const ne = (e<=s ? (k+1)*1440 + e : k*1440 + e);
+    nuit += Math.max(0, Math.min(t1,ne) - Math.max(t0,ns));
+  }
+  return {nuit, jour:(t1-t0)-nuit};
+}
+const HOR_IDS = ["f_out","f_off","f_ldg","f_on"];
+function computeBlock(){
+  const info = document.getElementById("blockInfo");
+  const out = parseClock(document.getElementById("f_out").value);
+  const off = parseClock(document.getElementById("f_off").value);
+  const ldg = parseClock(document.getElementById("f_ldg").value);
+  const on  = parseClock(document.getElementById("f_on").value);
+  const t0 = out ?? off, tEnd = on ?? ldg;
+  if(t0==null || tEnd==null){
+    info.textContent = `Renseigne les horaires : les temps jour et nuit se calculent automatiquement (nuit ${nightCfg.start} → ${nightCfg.end} GMT).`;
+    return;
+  }
+  let t1 = tEnd; if(t1<=t0) t1 += 1440; /* passage minuit */
+  const {jour, nuit} = splitDayNight(t0, t1);
+  document.getElementById("f_tj").value = toClock(jour);
+  document.getElementById("f_tn").value = toClock(nuit);
+  let vol = "";
+  if(off!=null && ldg!=null){
+    let l = ldg; if(l<=off) l += 1440;
+    vol = ` · dont vol ${fmtHM(l-off)}`;
+  }
+  info.textContent = `Temps bloc ${fmtHM(t1-t0)}${vol} — jour ${fmtHM(jour)} · nuit ${fmtHM(nuit)} (nuit ${nightCfg.start} → ${nightCfg.end} GMT)`;
+}
+HOR_IDS.forEach(id=>document.getElementById(id).addEventListener("change", computeBlock));
 
 /* mode détaillé */
 const advToggle = document.getElementById("advToggle");
@@ -618,14 +746,19 @@ document.getElementById("flightForm").addEventListener("submit", e=>{
     ifr = +document.getElementById("f_ifr").value || 0;
     sig = document.getElementById("f_sig").value.trim();
   }
+  const type = fieldVal("type");
+  const immat = fieldVal("immat").toUpperCase();
+  const fonction = fieldVal("fonction").toUpperCase();
+  if(!type || !immat || !fonction){ setMsg(formMsg,"Complétez le type, l'immatriculation et la fonction à bord.",false); return; }
+  const hor = {};
+  [["out","f_out"],["off","f_off"],["ldg","f_ldg"],["on","f_on"]].forEach(([k,id])=>{
+    const v = document.getElementById(id).value; if(v) hor[k]=v;
+  });
   const rec = {
     id: editId || (Date.now().toString(36)+Math.random().toString(36).slice(2,7)),
-    date,
-    type: document.getElementById("f_type").value.trim(),
-    immat: document.getElementById("f_immat").value.trim().toUpperCase(),
-    fonction: document.getElementById("f_fonction").value.trim().toUpperCase(),
-    nature: document.getElementById("f_nature").value.trim().toUpperCase(),
-    t, ifr, sig
+    date, type, immat, fonction,
+    nature: fieldVal("nature").toUpperCase(),
+    hor, t, ifr, sig
   };
   if(editId){
     const i = flights.findIndex(f=>f.id===editId);
@@ -636,6 +769,10 @@ document.getElementById("flightForm").addEventListener("submit", e=>{
     setMsg(formMsg,`Vol du ${date.split("-").reverse().join("/")} enregistré ✓ — total pilote : ${fmtHM(pilotTotal(grandTotal()))}`,true);
   }
   save(); endEdit(false); refreshChrome();
+  setFieldVal("type", rec.type);
+  setFieldVal("immat", rec.immat);
+  setFieldVal("fonction", rec.fonction);
+  setFieldVal("nature", rec.nature);
 });
 
 function endEdit(clearMsg){
@@ -643,7 +780,9 @@ function endEdit(clearMsg){
   document.getElementById("formTitle").textContent = "Nouveau vol";
   document.getElementById("btnSave").textContent = "Enregistrer le vol";
   document.getElementById("btnCancelEdit").hidden = true;
-  ["f_tj","f_tn","f_inst","f_link","f_ifr","f_sig","f_nature"].forEach(id=>document.getElementById(id).value="");
+  ["f_tj","f_tn","f_inst","f_link","f_ifr","f_sig","f_out","f_off","f_ldg","f_on"].forEach(id=>document.getElementById(id).value="");
+  computeBlock();
+  if(advToggle.checked){ advToggle.checked = false; advToggle.dispatchEvent(new Event("change")); }
   TIMECOLS.forEach(c=>document.getElementById("adv_"+c).value="");
   document.getElementById("adv_ifr").value=""; document.getElementById("adv_sig").value="";
   if(clearMsg) formMsg.textContent="";
@@ -654,10 +793,16 @@ function startEdit(id){
   const f = flights.find(x=>x.id===id); if(!f) return;
   editId = id;
   document.getElementById("f_date").value = f.date;
-  document.getElementById("f_type").value = f.type;
-  document.getElementById("f_immat").value = f.immat;
-  document.getElementById("f_fonction").value = f.fonction;
-  document.getElementById("f_nature").value = f.nature;
+  refreshSelects();
+  setFieldVal("type", f.type);
+  setFieldVal("immat", f.immat);
+  setFieldVal("fonction", f.fonction);
+  setFieldVal("nature", f.nature);
+  const hor = f.hor||{};
+  document.getElementById("f_out").value = hor.out||"";
+  document.getElementById("f_off").value = hor.off||"";
+  document.getElementById("f_ldg").value = hor.ldg||"";
+  document.getElementById("f_on").value = hor.on||"";
   advToggle.checked = true; advToggle.dispatchEvent(new Event("change"));
   TIMECOLS.forEach(c=>document.getElementById("adv_"+c).value = fmtHM(f.t[c]||0, true));
   document.getElementById("adv_ifr").value = f.ifr||"";
@@ -675,18 +820,6 @@ function delFlight(id){
   save(); refreshChrome(); renderCarnet();
 }
 
-/* ---------- datalists ---------- */
-function refreshDatalists(){
-  const fill = (id, vals)=>{
-    document.getElementById(id).innerHTML =
-      [...new Set(vals.filter(Boolean))].sort().map(v=>`<option value="${escapeHtml(v)}"></option>`).join("");
-  };
-  fill("dl_type", flights.map(f=>f.type));
-  fill("dl_immat", flights.map(f=>f.immat));
-  fill("dl_nature", flights.map(f=>f.nature));
-  const fs = new Set(["CDB","OPL","DC","INST", ...flights.map(f=>f.fonction).filter(Boolean)]);
-  document.getElementById("dl_fonction").innerHTML = [...fs].sort().map(v=>`<option value="${escapeHtml(v)}"></option>`).join("");
-}
 function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 
 /* ---------- carnet ---------- */
@@ -923,9 +1056,10 @@ document.getElementById("btnExport").addEventListener("click", ()=>{
     JSON.stringify({app:"LOGFLY",version:1,report0,flights}, null, 1), "application/json");
 });
 document.getElementById("btnCsv").addEventListener("click", ()=>{
-  const head = ["date","type","immat","fonction","nature",...TIMECOLS,"ifr","signature"];
+  const head = ["date","type","immat","fonction","nature","block_off","take_off","landing","block_on",...TIMECOLS,"ifr","signature"];
   const lines = [head.join(";")].concat(sortedFlights().map(f=>
     [f.date,f.type,f.immat,f.fonction,f.nature,
+     (f.hor||{}).out||"",(f.hor||{}).off||"",(f.hor||{}).ldg||"",(f.hor||{}).on||"",
      ...TIMECOLS.map(c=>fmtHM(f.t[c]||0,true)), f.ifr||"", (f.sig||"").replace(/;/g,",")]
     .map(v=>String(v??"")).join(";")));
   download("logfly-carnet.csv", "﻿"+lines.join("\n"), "text/csv");
@@ -961,7 +1095,7 @@ function refreshChrome(){
   const g = grandTotal();
   document.getElementById("chipTotal").innerHTML =
     `<small>TOTAL GÉNÉRAL</small> ${fmtHM(pilotTotal(g))}`;
-  refreshDatalists();
+  refreshSelects(true);
 }
 /* ---------- thème (auto / clair / sombre / néon) ---------- */
 const THEME_SEQ = ["auto","light","dark","neon"];
@@ -1028,9 +1162,24 @@ themeBtn.addEventListener("click", ()=>{
 });
 applyTheme();
 
+/* ---------- réglage de la nuit aéronautique ---------- */
+document.getElementById("nightStart").value = nightCfg.start;
+document.getElementById("nightEnd").value = nightCfg.end;
+document.getElementById("btnNight").addEventListener("click", ()=>{
+  const s = document.getElementById("nightStart").value;
+  const e = document.getElementById("nightEnd").value;
+  const msg = document.getElementById("nightMsg");
+  if(parseClock(s)===null || parseClock(e)===null){ setMsg(msg,"Heures invalides.",false); return; }
+  nightCfg = {start:s, end:e};
+  localStorage.setItem(LS_NIGHT, JSON.stringify(nightCfg));
+  computeBlock();
+  setMsg(msg,`Nuit enregistrée : ${s} → ${e} GMT ✓`,true);
+});
+
 document.getElementById("f_date").value = new Date().toISOString().slice(0,10);
 fillReportForm();
 refreshChrome();
+computeBlock();
 </script>
 </body>
 </html>
