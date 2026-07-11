@@ -590,6 +590,7 @@ function monthLabel(mk){
 }
 function refreshMonthSel(){
   const months = [...new Set(flights.map(monthKey))].sort();
+  if(!months.length) months.push(new Date().toISOString().slice(0,7));
   const cur = monthSel.value;
   monthSel.innerHTML = months.map(m=>`<option value="${m}">${monthLabel(m)}</option>`).join("")
     + `<option value="__all__">Tout le carnet</option>`;
@@ -641,15 +642,21 @@ function totalsCells(tot, blankZero){
     `<td class="num ${CELL_CLASS[c]}">${fmtHM(tot[c]||0, blankZero)}</td>`
   ).join("") + `<td class="num">${tot.ifr||""}</td>`;
 }
+function emptyRowHtml(){
+  return `<tr>
+    <td class="num">&nbsp;</td><td class="txt"></td><td class="txt"></td><td></td><td class="txt"></td>
+    ${CELL_ORDER.map(c=>`<td class="num ${CELL_CLASS[c]}"></td>`).join("")}
+    <td class="num"></td><td class="txt"></td><td class="colact noprint"></td>
+  </tr>`;
+}
+const MIN_ROWS = 12;
 function renderCarnet(){
   refreshMonthSel();
   const zone = document.getElementById("carnetZone");
   const all = sortedFlights();
-  if(!all.length){
-    zone.innerHTML = `<div class="card"><p class="empty">Aucun vol enregistré. Ajoutez votre premier vol dans l'onglet « Nouveau vol ».</p></div>`;
-    return;
-  }
-  const months = [...new Set(all.map(monthKey))].sort();
+  /* sans aucun vol : afficher la page du mois courant, vierge */
+  const months = all.length ? [...new Set(all.map(monthKey))].sort()
+                            : [new Date().toISOString().slice(0,7)];
   const which = monthSel.value==="__all__" ? months : [monthSel.value];
   /* report cumulé avant chaque mois */
   const carry = {}; let acc = {...report0};
@@ -694,6 +701,7 @@ function renderCarnet(){
               <button class="btn small danger" data-del="${f.id}" title="Supprimer">✕</button>
             </div></td>
           </tr>`).join("")}
+          ${Array.from({length:Math.max(0, MIN_ROWS - rows.length)}, emptyRowHtml).join("")}
           <tr class="totmois">
             <td colspan="5" class="lbl">Totaux du mois</td>
             ${totalsCells(mtot,true)}<td></td><td class="colact noprint"></td>
