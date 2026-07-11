@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LOGFLY — Carnet de vol</title>
+<style>
+:root{
+  --paper:#edf0f0;
+  --surface:#ffffff;
+  --ink:#1c2a35;
+  --muted:#5c6b76;
+  --line:#c7d0d5;
+  --line-strong:#8fa0aa;
+  --accent:#2b5d8a;
+  --accent-ink:#ffffff;
+  --jour-bg:#faf5e8;
+  --nuit-bg:#ebeaf5;
+  --report-bg:#f2f6f9;
+  --danger:#b3402e;
+  --ok:#2e7d5b;
+  --font-body:system-ui,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+  --font-head:"Avenir Next Condensed","Arial Narrow","Helvetica Neue",Arial,sans-serif;
+  --font-data:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --paper:#10161b;
+    --surface:#182129;
+    --ink:#e4e9ec;
+    --muted:#94a4ae;
+    --line:#2e3b45;
+    --line-strong:#4a5c68;
+    --accent:#6ea8d8;
+    --accent-ink:#0e1a24;
+    --jour-bg:#28231a;
+    --nuit-bg:#211f33;
+    --report-bg:#1b2733;
+    --danger:#d8705d;
+    --ok:#5cb890;
+  }
+}
+:root[data-theme="light"]{
+  --paper:#edf0f0; --surface:#ffffff; --ink:#1c2a35; --muted:#5c6b76;
+  --line:#c7d0d5; --line-strong:#8fa0aa; --accent:#2b5d8a; --accent-ink:#ffffff;
+  --jour-bg:#faf5e8; --nuit-bg:#ebeaf5; --report-bg:#f2f6f9;
+  --danger:#b3402e; --ok:#2e7d5b;
+}
+:root[data-theme="dark"]{
+  --paper:#10161b; --surface:#182129; --ink:#e4e9ec; --muted:#94a4ae;
+  --line:#2e3b45; --line-strong:#4a5c68; --accent:#6ea8d8; --accent-ink:#0e1a24;
+  --jour-bg:#28231a; --nuit-bg:#211f33; --report-bg:#1b2733;
+  --danger:#d8705d; --ok:#5cb890;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--font-body);
+  font-size:15px;
+  line-height:1.45;
+}
+header.app{
+  background:var(--surface);
+  border-bottom:2px solid var(--line-strong);
+  padding:14px 20px 10px;
+  display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 18px;
+}
+header.app h1{
+  font-family:var(--font-head);
+  font-size:26px;font-weight:700;letter-spacing:.14em;
+  margin:0;text-transform:uppercase;
+}
+header.app h1 .fly{color:var(--accent)}
+header.app .sub{color:var(--muted);font-size:13px;letter-spacing:.05em}
+.chip-total{
+  margin-left:auto;
+  font-family:var(--font-data);font-variant-numeric:tabular-nums;
+  background:var(--accent);color:var(--accent-ink);
+  border-radius:4px;padding:4px 12px;font-size:15px;
+  white-space:nowrap;
+}
+.chip-total small{opacity:.8;font-family:var(--font-body);letter-spacing:.05em}
+nav.tabs{
+  display:flex;gap:2px;padding:0 20px;background:var(--surface);
+  border-bottom:1px solid var(--line);overflow-x:auto;
+}
+nav.tabs button{
+  appearance:none;border:none;background:none;color:var(--muted);
+  font-family:var(--font-head);font-size:15px;letter-spacing:.08em;text-transform:uppercase;
+  padding:10px 14px;cursor:pointer;border-bottom:3px solid transparent;
+}
+nav.tabs button:hover{color:var(--ink)}
+nav.tabs button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+nav.tabs button.on{color:var(--accent);border-bottom-color:var(--accent);font-weight:700}
+main{padding:18px 20px 60px;max-width:1500px;margin:0 auto}
+section.view{display:none}
+section.view.on{display:block}
+h2{
+  font-family:var(--font-head);text-transform:uppercase;letter-spacing:.1em;
+  font-size:18px;margin:6px 0 14px;
+}
+.card{
+  background:var(--surface);border:1px solid var(--line);border-radius:6px;
+  padding:16px 18px;margin-bottom:18px;
+}
+/* ---------- Formulaire ---------- */
+.fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px 14px}
+.f{display:flex;flex-direction:column;gap:4px}
+.f label{
+  font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:600;
+}
+.f input,.f select{
+  font-family:var(--font-body);font-size:15px;color:var(--ink);
+  background:var(--paper);border:1px solid var(--line);border-radius:4px;
+  padding:7px 9px;width:100%;
+}
+.f input.hm{font-family:var(--font-data);font-variant-numeric:tabular-nums}
+.f input:focus-visible,.f select:focus-visible{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+.f input.bad{border-color:var(--danger);outline-color:var(--danger)}
+fieldset{
+  border:1px solid var(--line);border-radius:6px;margin:14px 0 0;padding:10px 14px 14px;
+}
+fieldset legend{
+  font-family:var(--font-head);text-transform:uppercase;letter-spacing:.09em;
+  font-size:13px;color:var(--muted);padding:0 6px;
+}
+.frow{display:flex;flex-wrap:wrap;gap:12px 14px;align-items:flex-end;margin-top:10px}
+.frow .f{min-width:130px;flex:1}
+.btn{
+  appearance:none;border:1px solid var(--line-strong);border-radius:4px;
+  background:var(--surface);color:var(--ink);
+  font-family:var(--font-head);font-size:14px;letter-spacing:.07em;text-transform:uppercase;
+  padding:9px 18px;cursor:pointer;
+}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+.btn.primary:hover{filter:brightness(1.08);color:var(--accent-ink)}
+.btn.danger{color:var(--danger);border-color:var(--danger)}
+.btn.small{padding:4px 9px;font-size:12px}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;align-items:center}
+.toggle-adv{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);cursor:pointer;user-select:none}
+.hint{font-size:12.5px;color:var(--muted);margin-top:8px}
+.msg{font-size:14px;margin-top:10px;font-weight:600}
+.msg.ok{color:var(--ok)}
+.msg.err{color:var(--danger)}
+/* ---------- Carnet (table) ---------- */
+.carnet-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px}
+.carnet-bar select{
+  font-size:15px;padding:7px 9px;border:1px solid var(--line);border-radius:4px;
+  background:var(--surface);color:var(--ink);
+}
+.month-block{margin-bottom:34px}
+.month-title{
+  font-family:var(--font-head);text-transform:uppercase;letter-spacing:.12em;
+  font-size:16px;margin:0 0 8px;display:flex;gap:14px;flex-wrap:wrap;align-items:baseline;
+}
+.month-title .annee{color:var(--muted)}
+.twrap{overflow-x:auto;background:var(--surface);border:1.5px solid var(--line-strong);border-radius:4px}
+table.carnet{
+  border-collapse:collapse;width:100%;min-width:1280px;
+  font-size:12.5px;
+}
+table.carnet th,table.carnet td{
+  border:1px solid var(--line);padding:3px 6px;text-align:center;vertical-align:middle;
+}
+table.carnet thead th{
+  font-family:var(--font-head);text-transform:uppercase;letter-spacing:.05em;
+  font-size:11px;font-weight:700;background:var(--report-bg);
+}
+table.carnet td.num{
+  font-family:var(--font-data);font-variant-numeric:tabular-nums;white-space:nowrap;
+}
+table.carnet td.txt{text-align:left;white-space:nowrap}
+table.carnet .cj{background:var(--jour-bg)}
+table.carnet .cn{background:var(--nuit-bg)}
+table.carnet thead .cj,table.carnet thead .cn{background:var(--report-bg)}
+table.carnet tr.report td{background:var(--report-bg);font-weight:600}
+table.carnet tr.report td.lbl,table.carnet tr.totmois td.lbl,table.carnet tr.totrep td.lbl{
+  text-align:right;font-family:var(--font-head);text-transform:uppercase;letter-spacing:.07em;font-size:11px;
+}
+table.carnet tr.totmois td{color:var(--muted)}
+table.carnet tr.totrep td{background:var(--report-bg);font-weight:700;border-top:2px solid var(--line-strong)}
+table.carnet td .rowbtns{display:flex;gap:4px;justify-content:center}
+.total-box{
+  display:flex;gap:26px;flex-wrap:wrap;margin-top:10px;
+  font-family:var(--font-data);font-variant-numeric:tabular-nums;font-size:14px;
+}
+.total-box b{font-family:var(--font-head);letter-spacing:.07em;text-transform:uppercase;font-size:12px;color:var(--muted);display:block}
+.empty{color:var(--muted);font-style:italic;padding:24px;text-align:center}
+/* ---------- Stats ---------- */
+table.stats{border-collapse:collapse;width:100%;max-width:720px;font-size:14px}
+table.stats th,table.stats td{border:1px solid var(--line);padding:5px 10px;text-align:left}
+table.stats td.num,table.stats th.num{text-align:right;font-family:var(--font-data);font-variant-numeric:tabular-nums}
+table.stats thead th{background:var(--report-bg);font-family:var(--font-head);text-transform:uppercase;letter-spacing:.06em;font-size:12px}
+.statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px}
+/* ---------- Impression ---------- */
+@page{size:A4 landscape;margin:9mm}
+@media print{
+  body{background:#fff;color:#000;font-size:11px}
+  header.app,nav.tabs,.carnet-bar,.noprint,td.colact,th.colact{display:none !important}
+  main{padding:0;max-width:none}
+  section.view{display:none}
+  section.view.printme{display:block}
+  .twrap{overflow:visible;border-color:#000;border-radius:0}
+  table.carnet{min-width:0;font-size:9.5px}
+  table.carnet th,table.carnet td{border-color:#000;padding:2px 3px}
+  .month-block{page-break-after:always;margin-bottom:0}
+  .month-block:last-child{page-break-after:auto}
+  .card{border:none;padding:0}
+}
+@media (prefers-reduced-motion: reduce){
+  *{transition:none !important;animation:none !important}
+}
+@media (max-width:640px){
+  header.app{padding:12px 12px 8px}
+  main{padding:14px 10px 60px}
+  nav.tabs{padding:0 8px}
+  .chip-total{margin-left:0}
+}
+</style>
+</head>
+<body>
+
+<header class="app">
+  <h1>LOG<span class="fly">FLY</span></h1>
+  <span class="sub">Carnet de vol — format réglementaire</span>
+  <span class="chip-total" id="chipTotal"><small>TOTAL GÉNÉRAL</small> 0:00</span>
+</header>
+
+<nav class="tabs" id="tabs">
+  <button data-v="saisie" class="on">✚ Nouveau vol</button>
+  <button data-v="carnet">Carnet</button>
+  <button data-v="stats">Statistiques</button>
+  <button data-v="reglages">Réglages</button>
+</nav>
+
+<main>
+
+<!-- ======================= SAISIE ======================= -->
+<section class="view on" id="view-saisie">
+  <div class="card">
+    <h2 id="formTitle">Nouveau vol</h2>
+    <form id="flightForm" autocomplete="off">
+      <div class="fgrid">
+        <div class="f"><label for="f_date">Date</label><input type="date" id="f_date" required></div>
+        <div class="f"><label for="f_type">Type d'aéronef</label><input id="f_type" list="dl_type" placeholder="B737-800" required></div>
+        <div class="f"><label for="f_immat">Immatriculation</label><input id="f_immat" list="dl_immat" placeholder="7T-…" required></div>
+        <div class="f"><label for="f_fonction">Fonction à bord</label><input id="f_fonction" list="dl_fonction" placeholder="CDB" required></div>
+        <div class="f" style="grid-column:span 2"><label for="f_nature">Nature du vol</label><input id="f_nature" list="dl_nature" placeholder="ALG - ORY"></div>
+      </div>
+
+      <fieldset id="quickFields">
+        <legend>Temps de vol</legend>
+        <div class="frow">
+          <div class="f"><label for="f_cat">Catégorie</label>
+            <select id="f_cat">
+              <option value="multi">Pilote multimoteurs</option>
+              <option value="mono">Pilote monomoteurs</option>
+              <option value="me">Membre d'équipage</option>
+            </select>
+          </div>
+          <div class="f"><label for="f_regime">Régime</label>
+            <select id="f_regime"></select>
+          </div>
+          <div class="f"><label for="f_tj">Temps jour (h:mm)</label><input class="hm" id="f_tj" placeholder="2:35"></div>
+          <div class="f"><label for="f_tn">Temps nuit (h:mm)</label><input class="hm" id="f_tn" placeholder="0:40"></div>
+        </div>
+        <div class="frow">
+          <div class="f"><label for="f_inst">Vol aux instruments (h:mm)</label><input class="hm" id="f_inst" placeholder="1:10"></div>
+          <div class="f"><label for="f_link">Link / simulateur (h:mm)</label><input class="hm" id="f_link"></div>
+          <div class="f"><label for="f_ifr">Arrivées I.F.R.</label><input class="hm" id="f_ifr" type="number" min="0" step="1" placeholder="1"></div>
+          <div class="f" style="flex:2"><label for="f_sig">Certification / remarques</label><input id="f_sig" placeholder="Aérodrome, instructeur…"></div>
+        </div>
+        <p class="hint">Les temps sont ventilés automatiquement dans les colonnes réglementaires selon la catégorie et le régime. Le vol aux instruments est compris dans les heures de vol pilote.</p>
+      </fieldset>
+
+      <fieldset id="advFields" hidden>
+        <legend>Saisie détaillée par colonne (h:mm)</legend>
+        <div class="fgrid" id="advGrid"></div>
+      </fieldset>
+
+      <div class="actions">
+        <button type="submit" class="btn primary" id="btnSave">Enregistrer le vol</button>
+        <button type="button" class="btn" id="btnCancelEdit" hidden>Annuler la modification</button>
+        <label class="toggle-adv"><input type="checkbox" id="advToggle"> Mode détaillé (toutes les colonnes)</label>
+      </div>
+      <p class="msg" id="formMsg" role="status"></p>
+    </form>
+    <datalist id="dl_type"></datalist>
+    <datalist id="dl_immat"></datalist>
+    <datalist id="dl_fonction"><option value="CDB"></option><option value="OPL"></option><option value="DC"></option><option value="INST"></option></datalist>
+    <datalist id="dl_nature"></datalist>
+  </div>
+</section>
+
+<!-- ======================= CARNET ======================= -->
+<section class="view" id="view-carnet">
+  <div class="carnet-bar noprint">
+    <h2 style="margin:0">Carnet</h2>
+    <select id="monthSel" aria-label="Mois affiché"></select>
+    <button class="btn" id="btnPrint">Imprimer / PDF</button>
+  </div>
+  <div id="carnetZone"></div>
+</section>
+
+<!-- ======================= STATS ======================= -->
+<section class="view" id="view-stats">
+  <h2>Statistiques</h2>
+  <div class="statgrid" id="statsZone"></div>
+</section>
+
+<!-- ======================= RÉGLAGES ======================= -->
+<section class="view" id="view-reglages">
+  <div class="card">
+    <h2>Report initial des heures</h2>
+    <p class="hint" style="margin-top:-6px">Reportez ici les totaux de votre carnet papier actuel (dernière ligne « Totaux à reporter »). Ils alimentent la ligne « Report des Heures » du premier mois saisi.</p>
+    <form id="reportForm">
+      <div class="fgrid" id="reportGrid"></div>
+      <div class="actions"><button type="submit" class="btn primary">Enregistrer le report</button></div>
+      <p class="msg" id="reportMsg" role="status"></p>
+    </form>
+  </div>
+  <div class="card">
+    <h2>Sauvegarde des données</h2>
+    <p class="hint" style="margin-top:-6px">Les vols sont enregistrés dans ce navigateur (stockage local). Exportez régulièrement une sauvegarde.</p>
+    <div class="actions">
+      <button class="btn" id="btnExport">Exporter (JSON)</button>
+      <button class="btn" id="btnCsv">Exporter (CSV)</button>
+      <button class="btn" id="btnImport">Importer (JSON)</button>
+      <input type="file" id="importFile" accept="application/json" hidden>
+      <button class="btn danger" id="btnWipe">Tout effacer</button>
+    </div>
+    <p class="msg" id="dataMsg" role="status"></p>
+  </div>
+</section>
+
+</main>
+
+<script>
+"use strict";
+/* ============================================================
+   LOGFLY — carnet de vol, format réglementaire
+   Colonnes de temps (stockées en minutes) :
+   me_j / me_n            Membre d'équipage jour / nuit
+   mo_jd mo_js mo_nd mo_ns  Pilote monomoteurs (jour double, jour seul, nuit double, nuit seul)
+   mu_jd mu_j1 mu_j2      Pilote multimoteurs jour (double, 1er pilote, 2e pilote)
+   mu_nd mu_n1 mu_n2      Pilote multimoteurs nuit (double, 1er pilote, 2e pilote)
+   in_d in_p              Vol aux instruments (double, pilote) — compris dans les heures pilote
+   link                   Simulateur
+   ============================================================ */
+
+const TIMECOLS = ["me_j","me_n","mo_jd","mo_js","mo_nd","mo_ns",
+                  "mu_jd","mu_j1","mu_j2","mu_nd","mu_n1","mu_n2",
+                  "in_d","in_p","link"];
+const PILOT_COLS = ["me_j","me_n","mo_jd","mo_js","mo_nd","mo_ns",
+                    "mu_jd","mu_j1","mu_j2","mu_nd","mu_n1","mu_n2"];
+const COL_LABELS = {
+  me_j:"Membre d'équipage — Jour", me_n:"Membre d'équipage — Nuit",
+  mo_jd:"Mono · Jour · Double", mo_js:"Mono · Jour · Seul",
+  mo_nd:"Mono · Nuit · Double", mo_ns:"Mono · Nuit · Seul",
+  mu_jd:"Multi · Jour · Double", mu_j1:"Multi · Jour · 1er pilote", mu_j2:"Multi · Jour · 2e pilote",
+  mu_nd:"Multi · Nuit · Double", mu_n1:"Multi · Nuit · 1er pilote", mu_n2:"Multi · Nuit · 2e pilote",
+  in_d:"Instruments · Double", in_p:"Instruments · Pilote", link:"Link / simulateur"
+};
+const MOIS = ["Janvier","Février","Mars","Avril","Mai","Juin",
+              "Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
+
+/* ---------- persistance ---------- */
+const LS_FLIGHTS = "logfly.flights.v1";
+const LS_REPORT  = "logfly.report0.v1";
+let flights = load(LS_FLIGHTS, []);
+let report0 = load(LS_REPORT, null) || emptyTotals();
+
+function load(k, d){ try{ const v = JSON.parse(localStorage.getItem(k)); return v==null? d : v; }catch(e){ return d; } }
+function save(){ localStorage.setItem(LS_FLIGHTS, JSON.stringify(flights)); }
+function saveReport(){ localStorage.setItem(LS_REPORT, JSON.stringify(report0)); }
+function emptyTotals(){ const o={ifr:0}; TIMECOLS.forEach(c=>o[c]=0); return o; }
+
+/* ---------- temps ---------- */
+function parseHM(s){
+  if(s==null) return 0;
+  s = String(s).trim().toLowerCase().replace(",",".");
+  if(s==="") return 0;
+  let m = s.match(/^(\d{1,5})\s*[:h.]\s*(\d{1,2})$/);
+  if(m){ const mn = +m[2]; if(mn>59) return null; return (+m[1])*60+mn; }
+  if(/^\d+$/.test(s)){
+    if(s.length<=2) return (+s)*60;
+    const mn = +s.slice(-2); if(mn>59) return null;
+    return (+s.slice(0,-2))*60+mn;
+  }
+  return null;
+}
+function fmtHM(min, blankZero){
+  if(!min) return blankZero ? "" : "0:00";
+  const h = Math.floor(min/60), m = min%60;
+  return h + ":" + String(m).padStart(2,"0");
+}
+
+/* ---------- helpers données ---------- */
+function monthKey(f){ return f.date.slice(0,7); }
+function sortedFlights(){
+  return [...flights].sort((a,b)=> a.date<b.date?-1 : a.date>b.date?1 : (a.id<b.id?-1:1));
+}
+function sumInto(acc, f){
+  TIMECOLS.forEach(c=> acc[c] += (f.t[c]||0));
+  acc.ifr += (f.ifr||0);
+}
+function pilotTotal(tot){ return PILOT_COLS.reduce((s,c)=> s+(tot[c]||0), 0); }
+function grandTotal(){
+  const acc = {...report0};
+  TIMECOLS.forEach(c=> acc[c]=report0[c]||0);
+  acc.ifr = report0.ifr||0;
+  flights.forEach(f=> sumInto(acc,f));
+  return acc;
+}
+
+/* ---------- navigation ---------- */
+const views = document.querySelectorAll("section.view");
+document.getElementById("tabs").addEventListener("click", e=>{
+  const b = e.target.closest("button"); if(!b) return;
+  document.querySelectorAll("#tabs button").forEach(x=>x.classList.toggle("on", x===b));
+  views.forEach(v=>v.classList.toggle("on", v.id==="view-"+b.dataset.v));
+  if(b.dataset.v==="carnet") renderCarnet();
+  if(b.dataset.v==="stats") renderStats();
+});
+
+/* ---------- formulaire : régimes selon catégorie ---------- */
+const REGIMES = {
+  multi:[["p1","1er pilote"],["p2","2e pilote"],["dbl","Double commande"]],
+  mono:[["seul","Seul à bord"],["dbl","Double commande"]],
+  me:[["me","Membre d'équipage"]]
+};
+const selCat = document.getElementById("f_cat");
+const selReg = document.getElementById("f_regime");
+function fillRegimes(){
+  selReg.innerHTML = REGIMES[selCat.value].map(([v,l])=>`<option value="${v}">${l}</option>`).join("");
+}
+selCat.addEventListener("change", fillRegimes);
+fillRegimes();
+
+/* mode détaillé */
+const advToggle = document.getElementById("advToggle");
+const advFields = document.getElementById("advFields");
+const quickFields = document.getElementById("quickFields");
+const advGrid = document.getElementById("advGrid");
+advGrid.innerHTML = TIMECOLS.map(c=>
+  `<div class="f"><label for="adv_${c}">${COL_LABELS[c]}</label><input class="hm" id="adv_${c}" placeholder="0:00"></div>`
+).join("") +
+  `<div class="f"><label for="adv_ifr">Arrivées I.F.R.</label><input id="adv_ifr" type="number" min="0" step="1"></div>` +
+  `<div class="f"><label for="adv_sig">Certification / remarques</label><input id="adv_sig"></div>`;
+advToggle.addEventListener("change", ()=>{
+  advFields.hidden = !advToggle.checked;
+  quickFields.hidden = advToggle.checked;
+});
+
+/* dispatch saisie rapide -> colonnes */
+function quickToCols(cat, reg, tj, tn, inst){
+  const t = {};
+  const put = (c,v)=>{ if(v) t[c]=(t[c]||0)+v; };
+  if(cat==="me"){ put("me_j",tj); put("me_n",tn); }
+  else if(cat==="mono"){
+    put(reg==="dbl"?"mo_jd":"mo_js", tj);
+    put(reg==="dbl"?"mo_nd":"mo_ns", tn);
+  } else {
+    const j = reg==="dbl"?"mu_jd" : reg==="p2"?"mu_j2":"mu_j1";
+    const n = reg==="dbl"?"mu_nd" : reg==="p2"?"mu_n2":"mu_n1";
+    put(j,tj); put(n,tn);
+  }
+  if(inst) t[reg==="dbl" ? "in_d" : "in_p"] = inst;
+  return t;
+}
+
+/* ---------- enregistrement ---------- */
+let editId = null;
+const formMsg = document.getElementById("formMsg");
+function setMsg(el, txt, ok){ el.textContent = txt; el.className = "msg " + (ok?"ok":"err"); }
+
+function readHM(input){
+  const v = parseHM(input.value);
+  input.classList.toggle("bad", v===null);
+  return v;
+}
+
+document.getElementById("flightForm").addEventListener("submit", e=>{
+  e.preventDefault();
+  const date = document.getElementById("f_date").value;
+  if(!date){ setMsg(formMsg,"Indiquez la date du vol.",false); return; }
+  let t = {}, ifr = 0, sig = "";
+  if(advToggle.checked){
+    let bad = false;
+    TIMECOLS.forEach(c=>{
+      const v = readHM(document.getElementById("adv_"+c));
+      if(v===null) bad = true; else if(v) t[c]=v;
+    });
+    if(bad){ setMsg(formMsg,"Format d'heure invalide (utilisez h:mm, ex. 2:35).",false); return; }
+    ifr = +document.getElementById("adv_ifr").value || 0;
+    sig = document.getElementById("adv_sig").value.trim();
+  } else {
+    const tj = readHM(document.getElementById("f_tj"));
+    const tn = readHM(document.getElementById("f_tn"));
+    const inst = readHM(document.getElementById("f_inst"));
+    const link = readHM(document.getElementById("f_link"));
+    if([tj,tn,inst,link].some(v=>v===null)){ setMsg(formMsg,"Format d'heure invalide (utilisez h:mm, ex. 2:35).",false); return; }
+    if(!tj && !tn && !link){ setMsg(formMsg,"Indiquez au moins un temps de vol (jour, nuit ou link).",false); return; }
+    if(inst > tj+tn){ setMsg(formMsg,"Le vol aux instruments ne peut pas dépasser le temps de vol total.",false); return; }
+    t = quickToCols(selCat.value, selReg.value, tj, tn, inst);
+    if(link) t.link = link;
+    ifr = +document.getElementById("f_ifr").value || 0;
+    sig = document.getElementById("f_sig").value.trim();
+  }
+  const rec = {
+    id: editId || (Date.now().toString(36)+Math.random().toString(36).slice(2,7)),
+    date,
+    type: document.getElementById("f_type").value.trim(),
+    immat: document.getElementById("f_immat").value.trim().toUpperCase(),
+    fonction: document.getElementById("f_fonction").value.trim().toUpperCase(),
+    nature: document.getElementById("f_nature").value.trim().toUpperCase(),
+    t, ifr, sig
+  };
+  if(editId){
+    const i = flights.findIndex(f=>f.id===editId);
+    if(i>=0) flights[i]=rec; else flights.push(rec);
+    setMsg(formMsg,"Vol modifié ✓",true);
+  } else {
+    flights.push(rec);
+    setMsg(formMsg,`Vol du ${date.split("-").reverse().join("/")} enregistré ✓ — total pilote : ${fmtHM(pilotTotal(grandTotal()))}`,true);
+  }
+  save(); endEdit(false); refreshChrome();
+});
+
+function endEdit(clearMsg){
+  editId = null;
+  document.getElementById("formTitle").textContent = "Nouveau vol";
+  document.getElementById("btnSave").textContent = "Enregistrer le vol";
+  document.getElementById("btnCancelEdit").hidden = true;
+  ["f_tj","f_tn","f_inst","f_link","f_ifr","f_sig","f_nature"].forEach(id=>document.getElementById(id).value="");
+  TIMECOLS.forEach(c=>document.getElementById("adv_"+c).value="");
+  document.getElementById("adv_ifr").value=""; document.getElementById("adv_sig").value="";
+  if(clearMsg) formMsg.textContent="";
+}
+document.getElementById("btnCancelEdit").addEventListener("click", ()=>endEdit(true));
+
+function startEdit(id){
+  const f = flights.find(x=>x.id===id); if(!f) return;
+  editId = id;
+  document.getElementById("f_date").value = f.date;
+  document.getElementById("f_type").value = f.type;
+  document.getElementById("f_immat").value = f.immat;
+  document.getElementById("f_fonction").value = f.fonction;
+  document.getElementById("f_nature").value = f.nature;
+  advToggle.checked = true; advToggle.dispatchEvent(new Event("change"));
+  TIMECOLS.forEach(c=>document.getElementById("adv_"+c).value = fmtHM(f.t[c]||0, true));
+  document.getElementById("adv_ifr").value = f.ifr||"";
+  document.getElementById("adv_sig").value = f.sig||"";
+  document.getElementById("formTitle").textContent = "Modifier le vol";
+  document.getElementById("btnSave").textContent = "Enregistrer les modifications";
+  document.getElementById("btnCancelEdit").hidden = false;
+  document.querySelector('#tabs button[data-v="saisie"]').click();
+  formMsg.textContent="";
+}
+function delFlight(id){
+  const f = flights.find(x=>x.id===id); if(!f) return;
+  if(!confirm(`Supprimer le vol du ${f.date.split("-").reverse().join("/")} (${f.nature||f.type}) ?`)) return;
+  flights = flights.filter(x=>x.id!==id);
+  save(); refreshChrome(); renderCarnet();
+}
+
+/* ---------- datalists ---------- */
+function refreshDatalists(){
+  const fill = (id, vals)=>{
+    document.getElementById(id).innerHTML =
+      [...new Set(vals.filter(Boolean))].sort().map(v=>`<option value="${escapeHtml(v)}"></option>`).join("");
+  };
+  fill("dl_type", flights.map(f=>f.type));
+  fill("dl_immat", flights.map(f=>f.immat));
+  fill("dl_nature", flights.map(f=>f.nature));
+  const fs = new Set(["CDB","OPL","DC","INST", ...flights.map(f=>f.fonction).filter(Boolean)]);
+  document.getElementById("dl_fonction").innerHTML = [...fs].sort().map(v=>`<option value="${escapeHtml(v)}"></option>`).join("");
+}
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+/* ---------- carnet ---------- */
+const monthSel = document.getElementById("monthSel");
+function monthLabel(mk){
+  const [y,m] = mk.split("-");
+  return MOIS[+m-1] + " " + y;
+}
+function refreshMonthSel(){
+  const months = [...new Set(flights.map(monthKey))].sort();
+  const cur = monthSel.value;
+  monthSel.innerHTML = months.map(m=>`<option value="${m}">${monthLabel(m)}</option>`).join("")
+    + `<option value="__all__">Tout le carnet</option>`;
+  if(months.includes(cur) || cur==="__all__") monthSel.value = cur;
+  else if(months.length) monthSel.value = months[months.length-1];
+}
+monthSel.addEventListener("change", renderCarnet);
+
+function headerHtml(){
+  return `<thead>
+  <tr>
+    <th rowspan="3">Qté<br>du mois</th>
+    <th colspan="2">Aéronef</th>
+    <th rowspan="3">Fonction<br>à bord</th>
+    <th rowspan="3">Nature du vol</th>
+    <th colspan="2">Membre<br>d'équipage</th>
+    <th colspan="4">Pilote monomoteurs</th>
+    <th colspan="6">Pilote multimoteurs</th>
+    <th colspan="2">Vol aux<br>instruments (1)</th>
+    <th rowspan="3">Link</th>
+    <th rowspan="3">Arr.<br>I.F.R.</th>
+    <th rowspan="3">Certification<br>et signature</th>
+    <th rowspan="3" class="colact noprint">Actions</th>
+  </tr>
+  <tr>
+    <th rowspan="2">Type</th><th rowspan="2">Immat.</th>
+    <th rowspan="2" class="cj">Jour</th><th rowspan="2" class="cn">Nuit</th>
+    <th colspan="2" class="cj">Jour</th><th colspan="2" class="cn">Nuit</th>
+    <th colspan="3" class="cj">Jour</th><th colspan="3" class="cn">Nuit</th>
+    <th rowspan="2">Double</th><th rowspan="2">Pilote</th>
+  </tr>
+  <tr>
+    <th class="cj">Double</th><th class="cj">Seul</th>
+    <th class="cn">Double</th><th class="cn">Seul</th>
+    <th class="cj">Double</th><th class="cj">1er pil.</th><th class="cj">2e pil.</th>
+    <th class="cn">Double</th><th class="cn">1er pil.</th><th class="cn">2e pil.</th>
+  </tr>
+  </thead>`;
+}
+const CELL_ORDER = ["me_j","me_n","mo_jd","mo_js","mo_nd","mo_ns",
+                    "mu_jd","mu_j1","mu_j2","mu_nd","mu_n1","mu_n2","in_d","in_p","link"];
+const CELL_CLASS = {
+  me_j:"cj",me_n:"cn",mo_jd:"cj",mo_js:"cj",mo_nd:"cn",mo_ns:"cn",
+  mu_jd:"cj",mu_j1:"cj",mu_j2:"cj",mu_nd:"cn",mu_n1:"cn",mu_n2:"cn",
+  in_d:"",in_p:"",link:""
+};
+function totalsCells(tot, blankZero){
+  return CELL_ORDER.map(c=>
+    `<td class="num ${CELL_CLASS[c]}">${fmtHM(tot[c]||0, blankZero)}</td>`
+  ).join("") + `<td class="num">${tot.ifr||""}</td>`;
+}
+function renderCarnet(){
+  refreshMonthSel();
+  const zone = document.getElementById("carnetZone");
+  const all = sortedFlights();
+  if(!all.length){
+    zone.innerHTML = `<div class="card"><p class="empty">Aucun vol enregistré. Ajoutez votre premier vol dans l'onglet « Nouveau vol ».</p></div>`;
+    return;
+  }
+  const months = [...new Set(all.map(monthKey))].sort();
+  const which = monthSel.value==="__all__" ? months : [monthSel.value];
+  /* report cumulé avant chaque mois */
+  const carry = {}; let acc = {...report0};
+  months.forEach(mk=>{
+    carry[mk] = {...acc};
+    all.filter(f=>monthKey(f)===mk).forEach(f=>{
+      const t={...acc}; /* clone to keep carry snapshots intact */
+      TIMECOLS.forEach(c=>t[c]=(acc[c]||0)+(f.t[c]||0));
+      t.ifr=(acc.ifr||0)+(f.ifr||0);
+      acc=t;
+    });
+  });
+  zone.innerHTML = which.map(mk=>{
+    const rows = all.filter(f=>monthKey(f)===mk);
+    const rep = carry[mk] || {...report0};
+    const mtot = emptyTotals();
+    rows.forEach(f=>sumInto(mtot,f));
+    const outTot = {}; TIMECOLS.forEach(c=>outTot[c]=(rep[c]||0)+mtot[c]);
+    outTot.ifr=(rep.ifr||0)+mtot.ifr;
+    const gp = pilotTotal(outTot);
+    return `<div class="month-block">
+      <p class="month-title"><span class="annee">Année ${mk.slice(0,4)}</span> <span>Mois de ${monthLabel(mk).split(" ")[0]}</span></p>
+      <div class="twrap"><table class="carnet">
+        ${headerHtml()}
+        <tbody>
+          <tr class="report">
+            <td colspan="5" class="lbl">Report des heures ▸</td>
+            ${totalsCells(rep,false)}<td></td><td class="colact noprint"></td>
+          </tr>
+          ${rows.map(f=>`
+          <tr>
+            <td class="num">${+f.date.slice(8,10)}</td>
+            <td class="txt">${escapeHtml(f.type)}</td>
+            <td class="txt">${escapeHtml(f.immat)}</td>
+            <td>${escapeHtml(f.fonction)}</td>
+            <td class="txt">${escapeHtml(f.nature)}</td>
+            ${CELL_ORDER.map(c=>`<td class="num ${CELL_CLASS[c]}">${fmtHM(f.t[c]||0,true)}</td>`).join("")}
+            <td class="num">${f.ifr||""}</td>
+            <td class="txt">${escapeHtml(f.sig||"")}</td>
+            <td class="colact noprint"><div class="rowbtns">
+              <button class="btn small" data-edit="${f.id}" title="Modifier">✎</button>
+              <button class="btn small danger" data-del="${f.id}" title="Supprimer">✕</button>
+            </div></td>
+          </tr>`).join("")}
+          <tr class="totmois">
+            <td colspan="5" class="lbl">Totaux du mois</td>
+            ${totalsCells(mtot,true)}<td></td><td class="colact noprint"></td>
+          </tr>
+          <tr class="totrep">
+            <td colspan="5" class="lbl">Totaux à reporter ▸▸</td>
+            ${totalsCells(outTot,false)}<td></td><td class="colact noprint"></td>
+          </tr>
+        </tbody>
+      </table></div>
+      <div class="total-box">
+        <span><b>Total général des heures</b> ${fmtHM(gp)}</span>
+        <span><b>dont nuit</b> ${fmtHM((outTot.me_n||0)+(outTot.mo_nd||0)+(outTot.mo_ns||0)+(outTot.mu_nd||0)+(outTot.mu_n1||0)+(outTot.mu_n2||0))}</span>
+        <span><b>Instruments</b> ${fmtHM((outTot.in_d||0)+(outTot.in_p||0))}</span>
+        <span><b>Link</b> ${fmtHM(outTot.link||0)}</span>
+        <span><b>Arrivées IFR</b> ${outTot.ifr||0}</span>
+      </div>
+    </div>`;
+  }).join("");
+  zone.querySelectorAll("[data-edit]").forEach(b=>b.addEventListener("click",()=>startEdit(b.dataset.edit)));
+  zone.querySelectorAll("[data-del]").forEach(b=>b.addEventListener("click",()=>delFlight(b.dataset.del)));
+}
+document.getElementById("btnPrint").addEventListener("click", ()=>{
+  document.getElementById("view-carnet").classList.add("printme");
+  window.print();
+  document.getElementById("view-carnet").classList.remove("printme");
+});
+
+/* ---------- stats ---------- */
+function renderStats(){
+  const zone = document.getElementById("statsZone");
+  const g = grandTotal();
+  const nuit = (g.me_n||0)+(g.mo_nd||0)+(g.mo_ns||0)+(g.mu_nd||0)+(g.mu_n1||0)+(g.mu_n2||0);
+  const jour = pilotTotal(g)-nuit;
+  const rowsGlobal = [
+    ["Total général (pilote + équipage)", fmtHM(pilotTotal(g))],
+    ["Jour", fmtHM(jour)], ["Nuit", fmtHM(nuit)],
+    ["Multimoteurs", fmtHM((g.mu_jd||0)+(g.mu_j1||0)+(g.mu_j2||0)+(g.mu_nd||0)+(g.mu_n1||0)+(g.mu_n2||0))],
+    ["Monomoteurs", fmtHM((g.mo_jd||0)+(g.mo_js||0)+(g.mo_nd||0)+(g.mo_ns||0))],
+    ["Membre d'équipage", fmtHM((g.me_j||0)+(g.me_n||0))],
+    ["Vol aux instruments", fmtHM((g.in_d||0)+(g.in_p||0))],
+    ["Link / simulateur", fmtHM(g.link||0)],
+    ["Arrivées I.F.R.", String(g.ifr||0)],
+    ["Vols enregistrés", String(flights.length)]
+  ];
+  const byYear = {}, byType = {};
+  flights.forEach(f=>{
+    const y = f.date.slice(0,4);
+    const tot = PILOT_COLS.reduce((s,c)=>s+(f.t[c]||0),0);
+    (byYear[y] = byYear[y]||{n:0,min:0}); byYear[y].n++; byYear[y].min+=tot;
+    const ty = f.type||"?";
+    (byType[ty] = byType[ty]||{n:0,min:0}); byType[ty].n++; byType[ty].min+=tot;
+  });
+  const yearRows = Object.keys(byYear).sort().map(y=>
+    `<tr><td>${y}</td><td class="num">${byYear[y].n}</td><td class="num">${fmtHM(byYear[y].min)}</td></tr>`).join("");
+  const typeRows = Object.keys(byType).sort((a,b)=>byType[b].min-byType[a].min).map(t=>
+    `<tr><td>${escapeHtml(t)}</td><td class="num">${byType[t].n}</td><td class="num">${fmtHM(byType[t].min)}</td></tr>`).join("");
+  zone.innerHTML = `
+    <div class="card"><h2 style="font-size:15px">Totaux (report initial inclus)</h2>
+      <table class="stats"><tbody>${rowsGlobal.map(r=>`<tr><td>${r[0]}</td><td class="num">${r[1]}</td></tr>`).join("")}</tbody></table>
+    </div>
+    <div class="card"><h2 style="font-size:15px">Par année (vols saisis)</h2>
+      <table class="stats"><thead><tr><th>Année</th><th class="num">Vols</th><th class="num">Heures</th></tr></thead>
+      <tbody>${yearRows||'<tr><td colspan="3" class="empty">—</td></tr>'}</tbody></table>
+    </div>
+    <div class="card"><h2 style="font-size:15px">Par type d'aéronef (vols saisis)</h2>
+      <table class="stats"><thead><tr><th>Type</th><th class="num">Vols</th><th class="num">Heures</th></tr></thead>
+      <tbody>${typeRows||'<tr><td colspan="3" class="empty">—</td></tr>'}</tbody></table>
+    </div>`;
+}
+
+/* ---------- réglages : report initial ---------- */
+const reportGrid = document.getElementById("reportGrid");
+reportGrid.innerHTML = TIMECOLS.map(c=>
+  `<div class="f"><label for="rep_${c}">${COL_LABELS[c]}</label><input class="hm" id="rep_${c}" placeholder="0:00"></div>`
+).join("") + `<div class="f"><label for="rep_ifr">Arrivées I.F.R.</label><input id="rep_ifr" type="number" min="0" step="1"></div>`;
+function fillReportForm(){
+  TIMECOLS.forEach(c=>document.getElementById("rep_"+c).value = fmtHM(report0[c]||0, true));
+  document.getElementById("rep_ifr").value = report0.ifr||"";
+}
+document.getElementById("reportForm").addEventListener("submit", e=>{
+  e.preventDefault();
+  const nr = emptyTotals(); let bad=false;
+  TIMECOLS.forEach(c=>{
+    const v = readHM(document.getElementById("rep_"+c));
+    if(v===null) bad=true; else nr[c]=v;
+  });
+  const msg = document.getElementById("reportMsg");
+  if(bad){ setMsg(msg,"Format d'heure invalide (utilisez h:mm).",false); return; }
+  nr.ifr = +document.getElementById("rep_ifr").value || 0;
+  report0 = nr; saveReport(); refreshChrome();
+  setMsg(msg,"Report initial enregistré ✓",true);
+});
+
+/* ---------- export / import ---------- */
+function download(name, text, mime){
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([text],{type:mime}));
+  a.download = name; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 5000);
+}
+document.getElementById("btnExport").addEventListener("click", ()=>{
+  download("logfly-sauvegarde-"+new Date().toISOString().slice(0,10)+".json",
+    JSON.stringify({app:"LOGFLY",version:1,report0,flights}, null, 1), "application/json");
+});
+document.getElementById("btnCsv").addEventListener("click", ()=>{
+  const head = ["date","type","immat","fonction","nature",...TIMECOLS,"ifr","signature"];
+  const lines = [head.join(";")].concat(sortedFlights().map(f=>
+    [f.date,f.type,f.immat,f.fonction,f.nature,
+     ...TIMECOLS.map(c=>fmtHM(f.t[c]||0,true)), f.ifr||"", (f.sig||"").replace(/;/g,",")]
+    .map(v=>String(v??"")).join(";")));
+  download("logfly-carnet.csv", "﻿"+lines.join("\n"), "text/csv");
+});
+document.getElementById("btnImport").addEventListener("click", ()=>document.getElementById("importFile").click());
+document.getElementById("importFile").addEventListener("change", e=>{
+  const file = e.target.files[0]; if(!file) return;
+  const msg = document.getElementById("dataMsg");
+  const rd = new FileReader();
+  rd.onload = ()=>{
+    try{
+      const d = JSON.parse(rd.result);
+      if(!Array.isArray(d.flights)) throw new Error("format");
+      if(!confirm(`Importer ${d.flights.length} vol(s) ? Les données actuelles (${flights.length} vol(s)) seront remplacées.`)) return;
+      flights = d.flights;
+      if(d.report0) report0 = {...emptyTotals(), ...d.report0};
+      save(); saveReport(); fillReportForm(); refreshChrome(); renderCarnet();
+      setMsg(msg,"Sauvegarde importée ✓",true);
+    }catch(err){ setMsg(msg,"Fichier invalide : export JSON LOGFLY attendu.",false); }
+  };
+  rd.readAsText(file); e.target.value="";
+});
+document.getElementById("btnWipe").addEventListener("click", ()=>{
+  if(!confirm("Effacer TOUS les vols et le report initial de ce navigateur ?")) return;
+  if(!confirm("Cette action est définitive (pensez à exporter d'abord). Confirmer l'effacement ?")) return;
+  flights = []; report0 = emptyTotals();
+  save(); saveReport(); fillReportForm(); refreshChrome(); renderCarnet();
+  setMsg(document.getElementById("dataMsg"),"Données effacées.",true);
+});
+
+/* ---------- rafraîchissement global ---------- */
+function refreshChrome(){
+  const g = grandTotal();
+  document.getElementById("chipTotal").innerHTML =
+    `<small>TOTAL GÉNÉRAL</small> ${fmtHM(pilotTotal(g))}`;
+  refreshDatalists();
+}
+document.getElementById("f_date").value = new Date().toISOString().slice(0,10);
+fillReportForm();
+refreshChrome();
+</script>
+</body>
+</html>
